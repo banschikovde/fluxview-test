@@ -1,0 +1,43 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: podinfo
+spec:
+  interval: 5m
+  chartRef:
+    kind: OCIRepository
+    name: podinfo
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+  upgrade:
+    crds: CreateReplace
+    cleanupOnFail: true
+    strategy:
+      name: RetryOnFailure
+      retryInterval: 5m
+  driftDetection:
+    mode: enabled
+  valuesFrom:
+    - kind: ConfigMap
+      name: podinfo-values
+      valuesKey: values.yaml
+    - kind: Secret
+      name: podinfo-secret-values
+      valuesKey: secret-values.yaml
+  values:
+    replicaCount: 1
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: podinfo
+            patch: |
+              - op: replace
+                path: /spec/replicas
+                value: 3

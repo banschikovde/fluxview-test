@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-values
+data:
+  values.yaml: |
+    ui:
+      color: "#114463"
+      message: hello from configmap

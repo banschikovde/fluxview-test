@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-settings
+  namespace: flux-system
+data:
+  CLUSTER_DOMAIN: example.com
+  CLUSTER_NAME: test
+  CLUSTER_REGION: eu-central-1
