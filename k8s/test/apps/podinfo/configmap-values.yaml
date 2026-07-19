@@ -5,5 +5,5 @@ metadata:
 data:
   values.yaml: |
     ui:
-      color: "#114463"
-      message: hello from configmap
+      color: "#6b21a8"
+      message: hello from configmap (updated)
