@@ -51,28 +51,22 @@ test_diff_hr_no_changes_exit_zero() {
 # ─── Filters ─────────────────────────────────────────────────────────────
 
 test_diff_hr_namespace_filter() {
-    # Note: namespace filter requires the chart templates to set metadata.namespace
-    # (e.g. via {{ .Release.Namespace }}). The podinfo chart does this; the local
-    # backend chart does not, so backend resources are filtered out — known gap.
+    # Charts that don't template {{ .Release.Namespace }} get their namespace
+    # injected post-render (matching kubectl-apply semantics), so the
+    # resource-level filter works for all charts.
+    run_fluxview diff hr --path "$CLUSTER_PATH" --branch-orig "$DIFF_BASE_REV" --namespace backend --color never
+    assert_exit_code 1 "diff hr --namespace backend detects changes"
+    assert_stdout_contains "Deployment: backend/backend" "backend present"
+    assert_not_contains "Deployment: podinfo" "podinfo excluded"
+}
+
+test_diff_hr_namespace_filter_podinfo() {
+    # podinfo chart sets {{ .Release.Namespace }} in templates, so its
+    # resources have explicit metadata.namespace. Filter works naturally.
     run_fluxview diff hr --path "$CLUSTER_PATH" --branch-orig "$DIFF_BASE_REV" --namespace podinfo --color never
     assert_exit_code 1 "diff hr --namespace podinfo detects changes"
     assert_stdout_contains "Deployment: podinfo" "podinfo present"
     assert_not_contains "Deployment: backend" "backend excluded"
-}
-
-test_diff_hr_namespace_filter_known_gap() {
-    # KNOWN GAP: diff hr --namespace <ns> uses resource-level filtering, which
-    # requires metadata.namespace in rendered output. Helm charts that don't
-    # template {{ .Release.Namespace }} (like our local backend chart) produce
-    # resources without an explicit namespace, so the filter drops them.
-    # This documents the gap — flux-local-style behavior would set the namespace
-    # during inflation. Logged as a non-failing observation.
-    run_fluxview diff hr --path "$CLUSTER_PATH" --branch-orig "$DIFF_BASE_REV" --namespace backend --color never
-    if [[ "$LAST_EXIT" == "0" ]] && printf '%s' "$LAST_STDERR" | grep -q "No resources found in namespace"; then
-        pass "diff hr --namespace backend hits known resource-level filter gap"
-    else
-        fail "diff hr namespace gap" "unexpected behavior: exit=$LAST_EXIT, stderr=$(printf '%s' "$LAST_STDERR" | head -1)"
-    fi
 }
 
 test_diff_hr_color_never_prefix() {
@@ -119,7 +113,7 @@ test_case "diff_hr_backend_replicas_change"        test_diff_hr_backend_replicas
 test_case "diff_hr_podinfo_values_change"          test_diff_hr_podinfo_values_change
 test_case "diff_hr_no_changes_exit_zero"           test_diff_hr_no_changes_exit_zero
 test_case "diff_hr_namespace_filter"               test_diff_hr_namespace_filter
-test_case "diff_hr_namespace_filter_known_gap"     test_diff_hr_namespace_filter_known_gap
+test_case "diff_hr_namespace_filter_podinfo"       test_diff_hr_namespace_filter_podinfo
 test_case "diff_hr_color_never_prefix"             test_diff_hr_color_never_prefix
 test_case "diff_hr_unsupported_skipped_both"       test_diff_hr_unsupported_skipped_in_both_states
 test_case "diff_hr_unknown_name"                   test_diff_hr_unknown_name
