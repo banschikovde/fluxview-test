@@ -1,0 +1,17 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bucket-app
+  namespace: bucket-app
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: my-chart
+      version: "1.0.0"
+      sourceRef:
+        kind: Bucket
+        name: chart-bucket
+        namespace: flux-system
+  values:
+    replicaCount: 1

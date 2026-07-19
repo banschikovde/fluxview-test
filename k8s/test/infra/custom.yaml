@@ -1,0 +1,7 @@
+apiVersion: example.io/v1alpha1
+kind: Widget
+metadata:
+  name: my-widget
+spec:
+  size: 42
+  color: blue

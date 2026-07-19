@@ -1,0 +1,6 @@
+# Build artifacts
+/bin/
+
+# OS / editor
+.DS_Store
+*.swp

@@ -1,0 +1,7 @@
+apiVersion: example.io/v1alpha1
+kind: Widget
+metadata:
+  name: good-widget
+spec:
+  size: 50
+  color: green

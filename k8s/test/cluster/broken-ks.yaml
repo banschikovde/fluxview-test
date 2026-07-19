@@ -1,0 +1,12 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: broken-ks
+  namespace: flux-system
+spec:
+  interval: 5m
+  prune: true
+  path: ./k8s/test/does-not-exist
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

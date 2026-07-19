@@ -1,0 +1,7 @@
+apiVersion: example.io/v1alpha1
+kind: Widget
+metadata:
+  name: bad-widget
+spec:
+  size: 250
+  color: purple
