@@ -72,8 +72,10 @@ test_diff_hr_namespace_filter_podinfo() {
 test_diff_hr_color_never_prefix() {
     run_fluxview diff hr backend --path "$CLUSTER_PATH" --branch-orig "$DIFF_BASE_REV" --color never
     assert_exit_code 1 "diff hr color never works"
-    assert_stdout_contains "+    replicas: 5" "added line has + prefix"
-    assert_stdout_contains "-    replicas: 2" "removed line has - prefix"
+    # kustomize's namespace transformer normalizes YAML indent to 2 spaces,
+    # matching `build hr` output (processYAMLDoc also uses 2-space).
+    assert_stdout_contains "+  replicas: 5" "added line has + prefix"
+    assert_stdout_contains "-  replicas: 2" "removed line has - prefix"
 }
 
 # ─── Unsupported HRs in both states ──────────────────────────────────────
