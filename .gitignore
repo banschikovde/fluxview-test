@@ -1,6 +1,9 @@
 # Build artifacts
 /bin/
 
+# Test results (captured stdout/stderr per test, regenerated on each run)
+/tests/.results/
+
 # OS / editor
 .DS_Store
 *.swp
