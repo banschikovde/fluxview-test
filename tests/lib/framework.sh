@@ -30,8 +30,17 @@ readonly FLUXVIEW_BIN="${FLUXVIEW_BIN:-$BIN_DIR/fluxview}"
 readonly CLUSTER_PATH="$REPO_ROOT/k8s/test/cluster"
 readonly INVALID_CLUSTER_PATH="$REPO_ROOT/k8s/invalid/cluster"
 
-# Git revision used as the comparison base for diff tests (previous commit).
-readonly DIFF_BASE_REV="${DIFF_BASE_REV:-HEAD~1}"
+# Git revision used as the comparison base for diff tests. Defaults to the
+# `smoke-base` tag (the "Base smoke test data..." commit); falls back to
+# HEAD~1 if the tag is missing.
+default_diff_base() {
+    if git -C "$FLUXVIEW_TEST_ROOT" rev-parse --verify --quiet smoke-base >/dev/null; then
+        echo "smoke-base"
+    else
+        echo "HEAD~1"
+    fi
+}
+readonly DIFF_BASE_REV="${DIFF_BASE_REV:-$(default_diff_base)}"
 
 # ─── Output / state ──────────────────────────────────────────────────────
 if [[ -t 1 ]]; then

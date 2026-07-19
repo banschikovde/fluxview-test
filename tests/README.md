@@ -92,15 +92,20 @@ warnings and continue.
 
 ## Test data and git history
 
-The repo has two commits on `main`:
+The repo has the following commits on `main`:
 
 1. `Base smoke test data covering build/diff/validate scenarios`
-   — the baseline state of all fixtures.
+   — the baseline state of all fixtures (tagged **`smoke-base`**).
 2. `Modify resources for diff tests`
-   — three deliberate edits so `diff --branch-orig HEAD~1` finds changes:
+   — three deliberate edits so `diff --branch-orig smoke-base` finds changes:
    - `apps/podinfo/configmap-values.yaml` — `ui.color` and `ui.message` changed
    - `infra/deployment.yaml` — `replicas: 1 → 3`
    - `apps/backend/helmrelease.yaml` — `replicaCount: 2 → 5`, `nginx: 1.25 → 1.27`
+3. `Add fluxview smoke test framework` — this test harness.
+
+The runner compares against the `smoke-base` tag by default (it falls back
+to `HEAD~1` if the tag is missing). Override with the `DIFF_BASE_REV`
+environment variable.
 
 `fake-podinfo/` is intentional: it duplicates the podinfo HelmRelease
 (`namespace/name`) to exercise the dedup logic in `buildHRInflation`.
