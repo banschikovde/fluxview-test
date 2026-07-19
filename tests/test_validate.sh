@@ -123,21 +123,16 @@ test_validate_help() {
 
 # ─── Known issues / documented behaviors ─────────────────────────────────
 
-# KNOWN ISSUE: validate with a relative --path produces spurious
-# "could not read ... Rel: can't make X relative to Y" warnings because
-# validate.go passes the raw clusterPath (not absClusterPath) to the parser.
-# The validation result is still correct (exit code is right), but the
-# warnings are noise. Tracked here as a non-failing test for visibility.
-test_validate_known_issue_relative_path_warnings() {
+# Regression test for previously-known issue: validate with a relative
+# --path used to produce spurious "could not read ... Rel: can't make X
+# relative to Y" warnings because validate.go passed the raw clusterPath
+# (not absClusterPath) to the parser/build functions. Fixed by the
+# 'Fix: validate emits spurious warnings with relative --path' commit.
+test_validate_relative_path_no_warnings() {
     cd "$REPO_ROOT"
     run_fluxview validate --path k8s/test/cluster/
-    assert_exit_code 0 "validate with relative path still returns correct exit code"
-    if printf '%s' "$LAST_STDERR" | grep -q "Rel: can't make"; then
-        # Known issue: log as a pass but note in stderr capture (do not fail).
-        pass "known relative-path warning is present (documented behavior)"
-    else
-        pass "no relative-path warnings (bug may be fixed)"
-    fi
+    assert_exit_code 0 "validate with relative path succeeds"
+    assert_not_contains "Rel: can't make" "no Rel warnings with relative --path (regression)"
 }
 
 # ─── Registration ────────────────────────────────────────────────────────
@@ -155,4 +150,4 @@ test_case "validate_yaml_crd_schema_format"      test_validate_yaml_crd_schema_f
 test_case "validate_nonexistent_path"            test_validate_nonexistent_path
 test_case "validate_path_without_kustomizations" test_validate_path_without_kustomizations
 test_case "validate_help"                        test_validate_help
-test_case "validate_known_relative_path_warn"    test_validate_known_issue_relative_path_warnings
+test_case "validate_relative_path_no_warnings" test_validate_relative_path_no_warnings
