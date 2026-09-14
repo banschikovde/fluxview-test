@@ -75,8 +75,8 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup | 17 |
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
-| `test_validate.sh`    | `validate` happy/invalid/missing schema | 14 |
-| **Total**             |                                    | **235** |
+| `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag | 19 |
+| **Total**             |                                    | **249** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-deployment
+  labels:
+    app: bad
+spec:
+  replicas: "three" # not an integer — violates the apps/v1 Deployment schema
+  selector:
+    matchLabels:
+      app: bad
+  template:
+    metadata:
+      labels:
+        app: bad
+    spec:
+      containers:
+        - name: main
+          image: nginx:1.27

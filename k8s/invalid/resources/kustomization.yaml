@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: invalid
 resources:
   - namespace.yaml
+  - bad-deployment.yaml
   - bad-widget.yaml
   - good-widget.yaml
