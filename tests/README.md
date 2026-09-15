@@ -76,7 +76,8 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
 | `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag | 19 |
-| **Total**             |                                    | **249** |
+| `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken-YAML known gap | 4 |
+| **Total**             |                                    | **253** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.

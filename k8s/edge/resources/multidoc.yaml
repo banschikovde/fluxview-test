@@ -1,0 +1,15 @@
+# Multi-document YAML: both documents must be validated separately.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-multi-cm
+data:
+  key: value
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: edge-multi-secret
+type: Opaque
+stringData:
+  token: edge
