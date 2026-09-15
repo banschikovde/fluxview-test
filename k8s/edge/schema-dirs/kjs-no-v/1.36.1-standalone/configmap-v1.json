@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "description": "Same marker schema as ../kjs/, but under a directory missing the mandatory 'v' prefix (1.36.1-standalone instead of v1.36.1-standalone). The checkout is detected but the versioned template resolves to v1.36.1-standalone/ — a silent miss, so this schema must NEVER apply; validation falls back to the default registry.",
+  "required": ["markerFieldFromLocalCheckout"],
+  "properties": {
+    "markerFieldFromLocalCheckout": { "type": "string" }
+  }
+}

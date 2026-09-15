@@ -77,7 +77,8 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
 | `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag | 19 |
 | `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2) | 5 |
-| **Total**             |                                    | **255** |
+| `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement | 3 |
+| **Total**             |                                    | **258** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.

@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "description": "Marker schema for the kubernetes-json-schema checkout smoke test: deliberately requires a field no real ConfigMap has, so a validation failure with 'markerFieldFromLocalCheckout' proves the LOCAL checkout schema was used (registry schemas do not require it). Named for the checkout layout: v1.36.1-standalone/configmap-v1.json.",
+  "required": ["markerFieldFromLocalCheckout"],
+  "properties": {
+    "markerFieldFromLocalCheckout": { "type": "string" }
+  }
+}
