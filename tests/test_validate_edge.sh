@@ -53,20 +53,16 @@ test_validate_edge_crd_without_schema_skips_kind() {
     assert_not_contains "Gadget" "the schema-less kind is not reported"
 }
 
-# ─── Known gaps / documented behaviors ───────────────────────────────────
+# ─── Broken YAML fails the gate ──────────────────────────────────────────
 
-test_validate_edge_broken_yaml_documented_gap() {
-    # KNOWN GAP (fluxview validate, feature/validate-kubeconform): a
-    # syntactically invalid resource file makes the kustomize build fail,
-    # but buildDirCached demotes build failures to a Warning and validate
-    # continues with an empty resource set — exiting 0 with "All resources
-    # valid." For a CI validation gate this is arguably wrong: unparseable
-    # YAML should fail the run. This case pins the CURRENT behavior; flip
-    # the assertions when the gap is fixed (expect exit 2 or 3).
+test_validate_edge_broken_yaml_fails() {
+    # Since the build-failure fix (feature/validate-kubeconform), a
+    # syntactically invalid resource file makes the kustomize build fail and
+    # validate exits 2 instead of silently validating an empty set.
     run_fluxview validate --path "$EDGE_BROKEN_CLUSTER_PATH"
-    assert_exit_code 0 "broken YAML currently exits 0 (known gap)"
-    assert_stderr_contains "Warning: kustomize build" "build failure surfaces as a warning"
-    assert_stderr_contains "All resources valid." "validate continues with an empty resource set"
+    assert_exit_code 2 "broken YAML fails validate (exit 2)"
+    assert_stderr_contains "kustomize build failed for 1 path(s), cannot validate" "stderr reports the failed build"
+    assert_not_contains "All resources valid." "no success message on a failed build"
 }
 
 # ─── Registration ────────────────────────────────────────────────────────
@@ -74,4 +70,4 @@ test_validate_edge_broken_yaml_documented_gap() {
 test_case "validate_edge_sparse_files"           test_validate_edge_sparse_files
 test_case "validate_edge_multidoc"               test_validate_edge_multidoc_all_docs_validated
 test_case "validate_edge_crd_without_schema"     test_validate_edge_crd_without_schema_skips_kind
-test_case "validate_edge_broken_yaml_gap"        test_validate_edge_broken_yaml_documented_gap
+test_case "validate_edge_broken_yaml_fails"      test_validate_edge_broken_yaml_fails
