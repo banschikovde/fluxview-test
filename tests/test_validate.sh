@@ -3,13 +3,13 @@
 #
 # Verifies the kubeconform-based validation: native Kubernetes resources
 # against the default registry (downloaded + cached), CRD schemas from
-# --crd-schema-dir (JSON + YAML CRD converted on the fly), missing-schema
+# --schema-dir (JSON + YAML CRD converted on the fly), missing-schema
 # skip behavior, --kubernetes-version, and the schema cache.
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 
-# Bundled CRD schemas live at $REPO_ROOT/crds/ (default location).
-readonly SCHEMA_DIR="$REPO_ROOT/crds"
+# Bundled validation schemas live at $REPO_ROOT/schemas/ (default location).
+readonly SCHEMA_DIR="$REPO_ROOT/schemas"
 
 # ─── Happy path ──────────────────────────────────────────────────────────
 
@@ -24,10 +24,10 @@ test_validate_happy() {
 
 test_validate_announces_sources_before_build() {
     # The planned schema sources are printed before the (possibly slow)
-    # build: the default crds/ dir plus the Kubernetes registry.
+    # build: the default schemas/ dir plus the Kubernetes registry.
     run_fluxview validate --path "$CLUSTER_PATH"
     assert_exit_code 0 "validate succeeds"
-    assert_stderr_contains "Validating against crds, Kubernetes schemas (Kubernetes " \
+    assert_stderr_contains "Validating against schemas, Kubernetes schemas (Kubernetes " \
         "stderr announces schema sources"
     # The announcement must precede the build progress lines.
     if [[ "$(printf '%s\n' "$LAST_STDERR" | grep -n 'Building ' | head -1 | cut -d: -f1)" -gt \
@@ -39,8 +39,8 @@ test_validate_announces_sources_before_build() {
 }
 
 test_validate_crd_schema_dir_explicit() {
-    run_fluxview validate --path "$CLUSTER_PATH" --crd-schema-dir "$SCHEMA_DIR"
-    assert_exit_code 0 "validate with explicit --crd-schema-dir succeeds"
+    run_fluxview validate --path "$CLUSTER_PATH" --schema-dir "$SCHEMA_DIR"
+    assert_exit_code 0 "validate with explicit --schema-dir succeeds"
     assert_stderr_contains "Validating against $SCHEMA_DIR" "stderr mentions schema dir"
 }
 
@@ -104,7 +104,7 @@ test_validate_bogus_version_skips_native() {
 
 test_validate_invalid_resources_exit_3() {
     # k8s/invalid/ holds a Widget with size=250 (max 100) and color=purple
-    # (not in enum) — both violate the CRD YAML schema from crds/.
+    # (not in enum) — both violate the CRD YAML schema from schemas/.
     run_fluxview validate --path "$INVALID_CLUSTER_PATH"
     assert_exit_code 3 "validate with invalid resources exits 3"
     assert_stderr_contains "Widget invalid/bad-widget" "stderr reports the bad Widget"
@@ -136,14 +136,14 @@ test_validate_missing_schema_skipped() {
     # Widget is not validated, native kinds still come from the registry.
     local empty_schemas
     empty_schemas=$(mktemp -d)
-    run_fluxview validate --path "$CLUSTER_PATH" --crd-schema-dir "$empty_schemas"
+    run_fluxview validate --path "$CLUSTER_PATH" --schema-dir "$empty_schemas"
     assert_exit_code 0 "validate with no CRD schemas succeeds"
     assert_stderr_contains "All resources valid." "resources without schemas are skipped"
     rm -rf "$empty_schemas"
 }
 
 test_validate_yaml_crd_schema_format() {
-    # The crds/ directory contains both JSON schemas (.json) and a YAML CRD
+    # The schemas/ directory contains both JSON schemas (.json) and a YAML CRD
     # (widgets-crd.yaml). Verify the YAML CRD is converted and applied: the
     # bad-widget scenario above fails only if the Widget schema is active.
     run_fluxview validate --path "$INVALID_CLUSTER_PATH"
@@ -171,15 +171,16 @@ test_validate_path_without_kustomizations() {
 test_validate_help() {
     run_fluxview validate --help
     assert_exit_code 0 "validate --help succeeds"
-    assert_stdout_contains "--crd-schema-dir" "help lists --crd-schema-dir"
+    assert_stdout_contains "--schema-dir" "help lists --schema-dir"
     assert_stdout_contains "--kubernetes-version" "help lists --kubernetes-version"
 }
 
-test_validate_old_schema_dir_flag_rejected() {
-    # --schema-dir was renamed to --crd-schema-dir; the old flag must be
-    # rejected, not silently ignored.
-    run_fluxview validate --path "$CLUSTER_PATH" --schema-dir "$SCHEMA_DIR"
-    assert_exit_code 2 "old --schema-dir flag is rejected"
+test_validate_old_crd_schema_dir_flag_rejected() {
+    # --schema-dir is the canonical name (it never changed on main);
+    # --crd-schema-dir existed only on the unreleased feature branch and
+    # must be rejected, not silently ignored.
+    run_fluxview validate --path "$CLUSTER_PATH" --crd-schema-dir "$SCHEMA_DIR"
+    assert_exit_code 2 "unknown --crd-schema-dir flag is rejected"
     assert_contains "unknown flag" "error mentions unknown flag"
 }
 
@@ -216,5 +217,5 @@ test_case "validate_yaml_crd_schema_format"      test_validate_yaml_crd_schema_f
 test_case "validate_nonexistent_path"            test_validate_nonexistent_path
 test_case "validate_path_without_kustomizations" test_validate_path_without_kustomizations
 test_case "validate_help"                        test_validate_help
-test_case "validate_old_flag_rejected"           test_validate_old_schema_dir_flag_rejected
+test_case "validate_old_flag_rejected"           test_validate_old_crd_schema_dir_flag_rejected
 test_case "validate_relative_path_no_warnings"   test_validate_relative_path_no_warnings

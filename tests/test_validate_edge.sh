@@ -48,7 +48,7 @@ test_validate_edge_crd_without_schema_skips_kind() {
     # openAPIV3Schema: the converter writes no schema for it, so the Gadget
     # resource stays schema-less and is silently skipped (documented
     # behavior of IgnoreMissingSchemas) instead of failing the run.
-    run_fluxview validate --path "$EDGE_CLUSTER_PATH" --crd-schema-dir "$EDGE_CRD_DIR"
+    run_fluxview validate --path "$EDGE_CLUSTER_PATH" --schema-dir "$EDGE_CRD_DIR"
     assert_exit_code 0 "schema-less CRD version does not fail validate"
     assert_stderr_contains "All resources valid." "resource without a CRD schema is skipped"
     assert_not_contains "Gadget" "the schema-less kind is not reported"

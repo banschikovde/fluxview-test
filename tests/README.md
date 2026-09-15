@@ -9,7 +9,7 @@ under `k8s/` and asserts on exit codes and stdout/stderr content.
 ```
 fluxview-test/
 ├── bin/fluxview              # built binary (gitignored)
-├── crds/                     # CRD schemas for `validate` (JSON + YAML CRD)
+├── schemas/                 # validation schemas for `validate` (JSON + YAML CRD + checkout)
 ├── k8s/
 │   ├── test/                 # main cluster fixture
 │   │   ├── cluster/          # Flux Kustomization CRs (used as --path)

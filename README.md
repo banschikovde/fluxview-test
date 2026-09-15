@@ -39,6 +39,6 @@ k8s/
 ├── edge/            # validate edge cases: sparse files, multi-doc YAML,
 │                    # CRD without schema, broken YAML, missing spec.path,
 │                    # kubernetes-json-schema checkout (marker schemas)
-crds/                # CRD schemas consumed by `validate`
+schemas/              # validation schemas consumed by `validate` (kubeconform JSON, CRD YAML, kubernetes-json-schema checkout)
 tests/               # bash framework + scenarios
 ```
