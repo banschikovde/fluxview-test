@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: edge
+resources:
+  - namespace.yaml
+  - multidoc.yaml
+  - empty.yaml
+  - empty-docs.yaml
+  - comment-only.yaml
+  - gadget.yaml

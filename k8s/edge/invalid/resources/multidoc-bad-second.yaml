@@ -1,0 +1,16 @@
+# The first document is valid; the second violates the v1 ConfigMap schema
+# (data values must be strings, not numbers). Every document in a multi-doc
+# file must be validated — the failure must surface bad-second-doc only.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: good-first-doc
+data:
+  key: value
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bad-second-doc
+data:
+  key: 42

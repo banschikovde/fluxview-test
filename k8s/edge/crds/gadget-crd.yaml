@@ -1,0 +1,17 @@
+# A CRD whose served version declares no openAPIV3Schema. The on-the-fly
+# CRD→schema converter skips such versions (nothing to convert), so Gadget
+# resources remain schema-less and are skipped by validation.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gadgets.noschema.example.com
+spec:
+  group: noschema.example.com
+  names:
+    kind: Gadget
+    plural: gadgets
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true

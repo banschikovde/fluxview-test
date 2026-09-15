@@ -1,0 +1,8 @@
+# A custom resource whose kind has no schema anywhere (its CRD ships no
+# structural schema — see ../crds/): validate must skip it silently.
+apiVersion: noschema.example.com/v1alpha1
+kind: Gadget
+metadata:
+  name: lonely-gadget
+spec:
+  anything: goes
