@@ -10,7 +10,10 @@
 # (or nothing) was used instead.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 
-readonly EDGE_CLUSTER_PATH="$REPO_ROOT/k8s/edge/cluster"
+# NOTE: not reusing EDGE_CLUSTER_PATH from test_validate_edge.sh — the
+# runner sources every scenario file into one shell, and the readonly
+# declaration there cannot be repeated here.
+readonly KJS_CLUSTER_PATH="$REPO_ROOT/k8s/edge/cluster"
 readonly KJS_DIR="$REPO_ROOT/k8s/edge/schema-dirs/kjs"
 readonly KJS_NO_V_DIR="$REPO_ROOT/k8s/edge/schema-dirs/kjs-no-v"
 
@@ -19,7 +22,7 @@ test_validate_kjs_checkout_wins_over_registry() {
     # edge cluster's ConfigMap: local checkout has priority over the
     # default registry. Other native kinds (Namespace, Secret) are not in
     # the checkout and fall back to the registry.
-    run_fluxview validate --path "$EDGE_CLUSTER_PATH" --crd-schema-dir "$KJS_DIR"
+    run_fluxview validate --path "$KJS_CLUSTER_PATH" --crd-schema-dir "$KJS_DIR"
     assert_exit_code 3 "marker schema from the local checkout fails the ConfigMap"
     assert_stderr_contains "ConfigMap edge/edge-multi-cm" "the ConfigMap is flagged"
     assert_stderr_contains "missing property 'markerFieldFromLocalCheckout'" "the LOCAL checkout schema was applied, not the registry's"
@@ -29,7 +32,7 @@ test_validate_kjs_fallback_to_registry() {
     # --kubernetes-version 1.35.0 has no v1.35.0-standalone/ dir in the
     # checkout: native kinds must gracefully fall back to the default
     # registry (real schemas) and pass.
-    run_fluxview validate --path "$EDGE_CLUSTER_PATH" --crd-schema-dir "$KJS_DIR" --kubernetes-version 1.35.0
+    run_fluxview validate --path "$KJS_CLUSTER_PATH" --crd-schema-dir "$KJS_DIR" --kubernetes-version 1.35.0
     assert_exit_code 0 "missing version dir falls back to the registry"
     assert_stderr_contains "All resources valid." "no marker error via registry schemas"
     assert_not_contains "markerFieldFromLocalCheckout" "the local checkout schema was NOT applied"
@@ -40,7 +43,7 @@ test_validate_kjs_dir_requires_v_prefix() {
     # prefix, so a checkout dir named 1.36.1-standalone (no "v") is a
     # silent miss — the marker schema must not apply and validation falls
     # back to the registry.
-    run_fluxview validate --path "$EDGE_CLUSTER_PATH" --crd-schema-dir "$KJS_NO_V_DIR"
+    run_fluxview validate --path "$KJS_CLUSTER_PATH" --crd-schema-dir "$KJS_NO_V_DIR"
     assert_exit_code 0 "no-v checkout dir falls back to the registry"
     assert_stderr_contains "All resources valid." "registry schemas apply"
     assert_not_contains "markerFieldFromLocalCheckout" "the no-v checkout schema was NOT applied"
