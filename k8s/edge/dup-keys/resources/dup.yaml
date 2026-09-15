@@ -1,0 +1,10 @@
+# Duplicated mapping key ("key" defined twice): kustomize build fails on
+# this before any schema validation runs (known behavior: the build gate
+# is stricter than kubeconform's --strict for duplicate keys).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dup-cm
+data:
+  key: first
+  key: second

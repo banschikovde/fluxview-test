@@ -1,0 +1,11 @@
+# A ConfigMap with a top-level field no v1 ConfigMap schema knows about.
+# With the default (non-strict) standalone schemas this passes; with
+# --strict the -standalone-strict schema rejects it via
+# additionalProperties: false.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unknown-field-cm
+data:
+  key: value
+bogusTopLevel: true

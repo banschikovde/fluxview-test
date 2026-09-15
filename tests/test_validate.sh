@@ -10,6 +10,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 
 # Bundled validation schemas live at $REPO_ROOT/schemas/ (default location).
 readonly SCHEMA_DIR="$REPO_ROOT/schemas"
+readonly STRICT_CLUSTER_PATH="$REPO_ROOT/k8s/edge/strict/cluster"
 
 # ─── Happy path ──────────────────────────────────────────────────────────
 
@@ -91,13 +92,46 @@ test_validate_kubernetes_version_flag() {
     assert_stderr_contains "(Kubernetes 1.30.0)" "stderr shows the requested version"
 }
 
+test_validate_kubernetes_version_v_prefix() {
+    # A version with the user-facing "v" prefix (v1.30.0) must behave
+    # like 1.30.0: schemas resolve, and the announcement shows the
+    # normalized form without the prefix.
+    run_fluxview validate --path "$CLUSTER_PATH" --kubernetes-version v1.30.0
+    assert_exit_code 0 "validate with --kubernetes-version v1.30.0 succeeds"
+    assert_stderr_contains "(Kubernetes 1.30.0)" "stderr shows the normalized version"
+}
+
 test_validate_bogus_version_skips_native() {
     # Known behavior: an unknown Kubernetes version yields 404 from the
     # registry, which counts as "schema not found" — native resources are
-    # silently skipped, not failed.
+    # silently skipped, not failed. The mass-skip warning must still hint
+    # at the likely wrong --kubernetes-version.
     run_fluxview validate --path "$CLUSTER_PATH" --kubernetes-version 0.0.0
     assert_exit_code 0 "unknown k8s version skips native resources (exit 0)"
     assert_stderr_contains "All resources valid." "no hard failure on unknown version"
+    assert_stderr_contains "Warning: the default registry has no schema" \
+        "the mass-skip warning fires when every fetched kind 404s"
+    assert_stderr_contains "a wrong --kubernetes-version is a common cause" \
+        "the warning points at the likely cause"
+}
+
+test_validate_kubernetes_version_short_form_rejected() {
+    # A short "1.30" would 404 every default-registry schema URL and
+    # silently skip all native kinds, looking like a green run; it is
+    # rejected before the build even starts.
+    run_fluxview validate --path "$CLUSTER_PATH" --kubernetes-version 1.30
+    assert_exit_code 2 "short kubernetes version rejected before the build"
+    assert_stderr_contains "want a full version like 1.36.1 (or master)" \
+        "error explains the expected form"
+    assert_not_contains "Building " "no build happens for a rejected version"
+}
+
+test_validate_kubernetes_version_master() {
+    # "master" is the registry's moving alias: schemas resolve like a
+    # pinned release, and the announcement shows the normalized form.
+    run_fluxview validate --path "$CLUSTER_PATH" --kubernetes-version master
+    assert_exit_code 0 "master version validates against master-standalone"
+    assert_stderr_contains "(Kubernetes master)" "announcement shows master"
 }
 
 # ─── CRD schema violations ───────────────────────────────────────────────
@@ -184,6 +218,96 @@ test_validate_old_crd_schema_dir_flag_rejected() {
     assert_contains "unknown flag" "error mentions unknown flag"
 }
 
+# ─── Strict mode ─────────────────────────────────────────────────────────
+
+test_validate_strict_off_accepts_unknown_fields() {
+    # The edge/strict fixture holds a ConfigMap with a top-level unknown
+    # field. Default (non-strict) standalone schemas from the registry
+    # allow unknown fields — the run passes without --strict.
+    run_fluxview validate --path "$STRICT_CLUSTER_PATH"
+    assert_exit_code 0 "non-strict schemas accept unknown fields"
+    assert_stderr_contains "All resources valid." "no failure without --strict"
+}
+
+test_validate_strict_rejects_unknown_fields() {
+    # --strict switches the default registry to -standalone-strict
+    # schemas: the same unknown field now fails validation.
+    # (Duplicate YAML keys — the other half of --strict — are rejected by
+    # the kustomize build already; see test_validate_edge.sh.)
+    run_fluxview validate --path "$STRICT_CLUSTER_PATH" --strict
+    assert_exit_code 3 "--strict rejects unknown fields (exit 3)"
+    assert_stderr_contains "ConfigMap edge-strict/unknown-field-cm" "stderr names the offending ConfigMap"
+    assert_stderr_contains "bogusTopLevel" "stderr names the unknown field"
+}
+
+# ─── Skip kinds ──────────────────────────────────────────────────────────
+
+test_validate_skip_kind_comma_separated() {
+    # k8s/invalid holds a bad Deployment and a bad Widget. Skipping both
+    # kinds (comma-separated form) leaves only the valid Namespace —
+    # validation passes.
+    run_fluxview validate --path "$INVALID_CLUSTER_PATH" --skip-kind "Deployment,Widget"
+    assert_exit_code 0 "comma-separated --skip-kind skips both invalid resources"
+    assert_stderr_contains "All resources valid." "skipped kinds are not flagged"
+}
+
+test_validate_skip_kind_qualified_repeatable() {
+    # The qualified apiVersion/Kind form plus repeatable flag usage:
+    # example.io/v1alpha1/Widget skips only that apiVersion's Widget.
+    run_fluxview validate --path "$INVALID_CLUSTER_PATH" \
+        --skip-kind Deployment --skip-kind example.io/v1alpha1/Widget
+    assert_exit_code 0 "qualified --skip-kind form skips the Widget"
+    assert_stderr_contains "All resources valid." "the run passes with both kinds skipped"
+}
+
+# ─── Machine-readable output ─────────────────────────────────────────────
+
+test_validate_output_json() {
+    # --output json emits the full report to STDOUT (stderr keeps the
+    # human chatter) and the exit code still reports validation failure.
+    run_fluxview validate --path "$INVALID_CLUSTER_PATH" --output json
+    assert_exit_code 3 "json output keeps the failure exit code"
+    assert_stdout_contains "\"status\": \"invalid\"" "stdout carries per-resource statuses"
+    assert_stdout_contains "\"kind\": \"Widget\"" "stdout names the resource kind"
+    assert_stdout_contains "\"summary\"" "stdout carries the summary block"
+    assert_stderr_contains "Validating against" "human chatter stays on stderr"
+}
+
+test_validate_output_junit() {
+    # --output junit emits a JUnit XML report to stdout: invalid
+    # resources become <failure> test cases for CI consumption.
+    run_fluxview validate --path "$INVALID_CLUSTER_PATH" --output junit
+    assert_exit_code 3 "junit output keeps the failure exit code"
+    assert_stdout_contains "<testsuites" "stdout is a JUnit XML document"
+    assert_stdout_contains "<failure" "invalid resources carry <failure> cases"
+    assert_stderr_contains "Validating against" "human chatter stays on stderr"
+}
+
+test_validate_output_json_success_with_skipped() {
+    # JSON output on a PASSING run: the edge cluster's Gadget has no schema
+    # anywhere, so the report must carry per-resource statuses ("valid" and
+    # "skipped") plus the summary counts — the CI-consumable positive path,
+    # not just the failure report.
+    run_fluxview validate --path "$REPO_ROOT/k8s/edge/cluster" \
+        --schema-dir "$SCHEMA_DIR" --output json
+    assert_exit_code 0 "json output on a passing run exits 0"
+    assert_stdout_contains '"status": "valid"' "valid statuses are reported"
+    assert_stdout_contains '"status": "skipped"' "schema-less Gadget is reported as skipped"
+    assert_stdout_contains '"summary"' "stdout carries the summary block"
+}
+
+test_validate_output_junit_skipped_cases() {
+    # JUnit output on a PASSING run: schema-less resources (the Gadget)
+    # become <skipped> test cases with skipped counts on the suite, so CI
+    # can distinguish "checked and clean" from "nothing to check".
+    run_fluxview validate --path "$REPO_ROOT/k8s/edge/cluster" \
+        --schema-dir "$SCHEMA_DIR" --output junit
+    assert_exit_code 0 "junit output on a passing run exits 0"
+    assert_stdout_contains '<skipped message="no schema or skipped kind">' "skipped testcase for the schema-less kind"
+    assert_stdout_contains 'skipped="1"' "suite counts the skipped case"
+    assert_not_contains "<failure" "no failure cases on a passing run"
+}
+
 # ─── Known issues / documented behaviors ─────────────────────────────────
 
 # Regression test for previously-known issue: validate with a relative
@@ -198,6 +322,25 @@ test_validate_relative_path_no_warnings() {
     assert_not_contains "Rel: can't make" "no Rel warnings with relative --path (regression)"
 }
 
+# ─── Schema download timeout ─────────────────────────────────────────────
+
+test_validate_schema_download_timeout_negative_rejected() {
+    # The flag accepts 0 (no limit) or a positive duration; a negative
+    # value is a configuration error, rejected before any work.
+    run_fluxview validate --path "$CLUSTER_PATH" --schema-download-timeout -5s
+    assert_exit_code 2 "negative --schema-download-timeout rejected"
+    assert_stderr_contains "must be 0 (no limit) or a positive duration" \
+        "error explains the accepted range"
+}
+
+test_validate_schema_download_timeout_zero_accepted() {
+    # 0 means "no per-request limit": valid — the run proceeds (stays
+    # interruptible via Ctrl-C) and behaves like the default.
+    run_fluxview validate --path "$CLUSTER_PATH" --schema-download-timeout 0
+    assert_exit_code 0 "zero --schema-download-timeout accepted"
+    assert_stderr_contains "All resources valid." "run completes with no per-request limit"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "validate_happy"                       test_validate_happy
@@ -207,8 +350,11 @@ test_case "validate_namespace_filter"            test_validate_namespace_filter
 test_case "validate_namespace_no_match"          test_validate_namespace_no_match
 test_case "validate_native_k8s_invalid"          test_validate_native_k8s_invalid
 test_case "validate_schema_cache_populated"      test_validate_schema_cache_populated
-test_case "validate_kubernetes_version_flag"     test_validate_kubernetes_version_flag
-test_case "validate_bogus_version_skips_native"  test_validate_bogus_version_skips_native
+test_case "validate_kubernetes_version_flag"       test_validate_kubernetes_version_flag
+test_case "validate_kubernetes_version_v_prefix"   test_validate_kubernetes_version_v_prefix
+test_case "validate_kubernetes_version_short"      test_validate_kubernetes_version_short_form_rejected
+test_case "validate_kubernetes_version_master"     test_validate_kubernetes_version_master
+test_case "validate_bogus_version_skips_native"    test_validate_bogus_version_skips_native
 test_case "validate_invalid_exit_3"              test_validate_invalid_resources_exit_3
 test_case "validate_invalid_lists_errors"        test_validate_invalid_lists_errors
 test_case "validate_invalid_only_bad_resource"   test_validate_invalid_only_bad_resource
@@ -218,4 +364,14 @@ test_case "validate_nonexistent_path"            test_validate_nonexistent_path
 test_case "validate_path_without_kustomizations" test_validate_path_without_kustomizations
 test_case "validate_help"                        test_validate_help
 test_case "validate_old_flag_rejected"           test_validate_old_crd_schema_dir_flag_rejected
-test_case "validate_relative_path_no_warnings"   test_validate_relative_path_no_warnings
+test_case "validate_relative_path_no_warnings"     test_validate_relative_path_no_warnings
+test_case "validate_strict_off"                    test_validate_strict_off_accepts_unknown_fields
+test_case "validate_strict_rejects_unknown"        test_validate_strict_rejects_unknown_fields
+test_case "validate_skip_kind_comma"               test_validate_skip_kind_comma_separated
+test_case "validate_skip_kind_qualified"           test_validate_skip_kind_qualified_repeatable
+test_case "validate_output_json"                   test_validate_output_json
+test_case "validate_output_junit"                   test_validate_output_junit
+test_case "validate_output_json_success"           test_validate_output_json_success_with_skipped
+test_case "validate_output_junit_skipped"          test_validate_output_junit_skipped_cases
+test_case "validate_download_timeout_negative"     test_validate_schema_download_timeout_negative_rejected
+test_case "validate_download_timeout_zero"         test_validate_schema_download_timeout_zero_accepted

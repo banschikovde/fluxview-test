@@ -1,0 +1,10 @@
+# size=50 is VALID under the v1alpha1 schema (max 100) and would be
+# invalid under v1beta1 (max 10) — proving this resource was validated
+# against its own version's schema.
+apiVersion: multiversion.example.com/v1alpha1
+kind: Thing
+metadata:
+  name: thing-old-ok
+  namespace: edge
+spec:
+  size: 50

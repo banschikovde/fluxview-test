@@ -75,10 +75,10 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup | 17 |
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
-| `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag | 19 |
-| `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2) | 5 |
-| `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement | 3 |
-| **Total**             |                                    | **258** |
+| `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag (+ `master`, short-form rejected, mass-skip warning), `--strict`, `--skip-kind`, `--schema-download-timeout` (0 ok / negative rejected), `--output json/junit` (incl. passing-run reports with skipped cases) | 32 |
+| `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2), duplicated YAML keys fail the build (exit 2), multi-version CRD (per-version schemas), corrupt JSON schema file (error, not skip), zero-resource build, broken CRD YAML (hard error exit 2, never cached) | 10 |
+| `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement, `-standalone-strict` variant under `--strict` | 4 |
+| **Total**             |                                    | **343** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.

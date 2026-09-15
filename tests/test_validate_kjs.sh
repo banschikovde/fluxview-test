@@ -16,6 +16,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 readonly KJS_CLUSTER_PATH="$REPO_ROOT/k8s/edge/cluster"
 readonly KJS_DIR="$REPO_ROOT/k8s/edge/schema-dirs/kjs"
 readonly KJS_NO_V_DIR="$REPO_ROOT/k8s/edge/schema-dirs/kjs-no-v"
+readonly KJS_STRICT_DIR="$REPO_ROOT/k8s/edge/schema-dirs/kjs-strict"
 
 test_validate_kjs_checkout_wins_over_registry() {
     # The marker schema in v1.36.1-standalone/ must be applied to the
@@ -49,8 +50,30 @@ test_validate_kjs_dir_requires_v_prefix() {
     assert_not_contains "markerFieldFromLocalCheckout" "the no-v checkout schema was NOT applied"
 }
 
+# ─── Strict variant of the checkout layout ───────────────────────────────
+
+test_validate_kjs_strict_variant_checkout() {
+    # --strict renders {{ .StrictSuffix }} into the checkout template:
+    # the marker schema in v1.36.1-standalone-strict/ must apply to the
+    # edge ConfigMap — proving the strict variant of the checkout layout
+    # is honored, not just the plain -standalone one.
+    run_fluxview validate --path "$KJS_CLUSTER_PATH" --schema-dir "$KJS_STRICT_DIR" --strict
+    assert_exit_code 3 "marker schema from the strict checkout fails the ConfigMap"
+    assert_stderr_contains "ConfigMap edge/edge-multi-cm" "the ConfigMap is flagged under --strict"
+    assert_stderr_contains "missing property 'markerFieldFromLocalCheckout'" \
+        "the STRICT checkout schema was applied"
+
+    # Negative control: without --strict the -standalone-strict directory
+    # does not match the template — the registry's plain schemas apply.
+    run_fluxview validate --path "$KJS_CLUSTER_PATH" --schema-dir "$KJS_STRICT_DIR"
+    assert_exit_code 0 "non-strict run ignores the -standalone-strict dir"
+    assert_stderr_contains "All resources valid." "registry schemas apply without --strict"
+    assert_not_contains "markerFieldFromLocalCheckout" "the strict checkout schema was NOT applied"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "validate_kjs_checkout_wins"         test_validate_kjs_checkout_wins_over_registry
 test_case "validate_kjs_fallback_registry"     test_validate_kjs_fallback_to_registry
 test_case "validate_kjs_dir_requires_v_prefix" test_validate_kjs_dir_requires_v_prefix
+test_case "validate_kjs_strict_variant"        test_validate_kjs_strict_variant_checkout

@@ -1,0 +1,50 @@
+# A multi-version CRD: both served versions ship structural schemas, with
+# DIFFERENT constraints per version (v1alpha1 allows size up to 100,
+# v1beta1 only up to 10). The converter must emit one schema per version
+# (thing-multiversion-v1alpha1.json / thing-multiversion-v1beta1.json), so
+# each resource is validated against its own version's schema.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: things.multiversion.example.com
+spec:
+  group: multiversion.example.com
+  names:
+    kind: Thing
+    listKind: ThingList
+    plural: things
+    singular: thing
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+              required:
+                - size
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+              required:
+                - size

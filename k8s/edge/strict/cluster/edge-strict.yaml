@@ -1,0 +1,16 @@
+# Flux KS for the --strict edge family: a ConfigMap with a top-level
+# unknown field. Non-strict standalone schemas from the default registry
+# accept unknown fields; --strict switches to -standalone-strict schemas
+# that reject them.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: edge-strict
+  namespace: flux-system
+spec:
+  interval: 5m
+  prune: true
+  path: ./k8s/edge/strict/resources
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

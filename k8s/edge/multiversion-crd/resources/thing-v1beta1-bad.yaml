@@ -1,0 +1,10 @@
+# Same size=50, but under the v1beta1 schema (max 10) it violates the
+# maximum — while v1alpha1 (thing-old-ok) accepts the same value. Each
+# version must be validated against its own converted schema.
+apiVersion: multiversion.example.com/v1beta1
+kind: Thing
+metadata:
+  name: thing-new-bad
+  namespace: edge
+spec:
+  size: 50

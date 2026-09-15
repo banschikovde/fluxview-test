@@ -1,0 +1,16 @@
+# Flux KS for the duplicate-keys edge family: a resource file with a
+# duplicated mapping key. kustomize (yaml.v3) rejects duplicate keys
+# already in lenient mode, so the kustomize build fails and validate
+# exits 2 — the document never reaches kubeconform's own strict decoder.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: edge-dup-keys
+  namespace: flux-system
+spec:
+  interval: 5m
+  prune: true
+  path: ./k8s/edge/dup-keys/resources
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

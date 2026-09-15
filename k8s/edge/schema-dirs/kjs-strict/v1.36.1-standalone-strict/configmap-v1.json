@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "description": "Marker schema for the strict variant of the kubernetes-json-schema checkout layout: deliberately requires a field no real ConfigMap has, so a validation failure with 'markerFieldFromLocalCheckout' under --strict proves the v1.36.1-standalone-strict/ directory was honored (the plain -standalone directory from the sibling kjs/ fixture is NOT read in strict mode).",
+  "required": ["markerFieldFromLocalCheckout"],
+  "properties": {
+    "markerFieldFromLocalCheckout": { "type": "string" }
+  }
+}
