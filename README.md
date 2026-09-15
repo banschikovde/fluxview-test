@@ -35,7 +35,9 @@ k8s/
 ├── test/apps/       # HelmRelease scenarios
 ├── test/crds/       # CRD resources (the `crds` KS target)
 ├── test/infra/      # plain resources + custom Widget
-└── invalid/         # schema-violating fixture for validate exit-code 3
+├── invalid/         # schema-violating fixture for validate exit-code 3
+└── edge/            # validate edge cases: sparse files, multi-doc YAML,
+│                    # CRD without schema, broken YAML, missing spec.path
 crds/                # CRD schemas consumed by `validate`
 tests/               # bash framework + scenarios
 ```
