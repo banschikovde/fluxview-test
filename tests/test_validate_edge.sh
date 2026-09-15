@@ -13,6 +13,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 readonly EDGE_CLUSTER_PATH="$REPO_ROOT/k8s/edge/cluster"
 readonly EDGE_INVALID_CLUSTER_PATH="$REPO_ROOT/k8s/edge/invalid/cluster"
 readonly EDGE_BROKEN_CLUSTER_PATH="$REPO_ROOT/k8s/edge/broken/cluster"
+readonly EDGE_BROKEN_PATH_CLUSTER="$REPO_ROOT/k8s/edge/broken-path/cluster"
 readonly EDGE_CRD_DIR="$REPO_ROOT/k8s/edge/crds"
 
 # ─── Sparse / empty files ────────────────────────────────────────────────
@@ -65,9 +66,23 @@ test_validate_edge_broken_yaml_fails() {
     assert_not_contains "All resources valid." "no success message on a failed build"
 }
 
+# ─── Flux KS with a missing spec.path ────────────────────────────────────
+
+test_validate_edge_missing_path_fails() {
+    # A Flux Kustomization whose spec.path does not exist in the repo used
+    # to be skipped silently — its resources were absent from the checked
+    # set while validate reported success. Now validate warns and exits 2.
+    run_fluxview validate --path "$EDGE_BROKEN_PATH_CLUSTER"
+    assert_exit_code 2 "KS with missing spec.path fails validate (exit 2)"
+    assert_stderr_contains "path ./k8s/test/does-not-exist not found locally" "warning names the missing path"
+    assert_stderr_contains "1 Kustomization(s) point to a path missing from the repository, cannot validate" "stderr reports the Kustomization"
+    assert_not_contains "All resources valid." "no success message on a missing spec.path"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "validate_edge_sparse_files"           test_validate_edge_sparse_files
 test_case "validate_edge_multidoc"               test_validate_edge_multidoc_all_docs_validated
 test_case "validate_edge_crd_without_schema"     test_validate_edge_crd_without_schema_skips_kind
 test_case "validate_edge_broken_yaml_fails"      test_validate_edge_broken_yaml_fails
+test_case "validate_edge_missing_path_fails"     test_validate_edge_missing_path_fails

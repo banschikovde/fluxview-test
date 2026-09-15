@@ -71,13 +71,13 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | File                  | Command                            | Tests |
 |-----------------------|------------------------------------|-------|
 | `test_root.sh`        | help, version, exit codes, unknown args/flags | 13 |
-| `test_build_ks.sh`    | `build ks` default, filters, aliases, errors | 20 |
+| `test_build_ks.sh`    | `build ks` default, filters, aliases, errors | 21 |
 | `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup | 17 |
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
 | `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag | 19 |
-| `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2) | 4 |
-| **Total**             |                                    | **253** |
+| `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2) | 5 |
+| **Total**             |                                    | **255** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.

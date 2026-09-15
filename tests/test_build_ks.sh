@@ -125,6 +125,16 @@ test_build_ks_nonexistent_path() {
     assert_stderr_contains "does not exist" "error reports missing path"
 }
 
+test_build_ks_missing_spec_path_warns() {
+    # A Flux Kustomization whose spec.path does not exist locally: build
+    # stays lenient (warn-and-continue) — unlike validate, which fails.
+    # The KS resource itself is still emitted.
+    run_fluxview build ks --path "$REPO_ROOT/k8s/edge/broken-path/cluster"
+    assert_exit_code 0 "build stays lenient on a missing spec.path"
+    assert_stderr_contains "path ./k8s/test/does-not-exist not found locally, skipping its resources" "warning names the missing path"
+    assert_stdout_contains "name: missing-path" "the KS resource itself is still emitted"
+}
+
 test_build_ks_path_without_kustomizations() {
     # A directory inside the repo that has no Flux Kustomization files
     # (only native kustomization.yaml, which is excluded by hasDirectKustomizations).
@@ -184,6 +194,7 @@ test_case "build_ks_resource_sorting"        test_build_ks_resource_sorting
 test_case "build_ks_no_resource_type"        test_build_ks_no_resource_type
 test_case "build_ks_unsupported_type"        test_build_ks_unsupported_resource_type
 test_case "build_ks_nonexistent_path"        test_build_ks_nonexistent_path
+test_case "build_ks_missing_spec_path"       test_build_ks_missing_spec_path_warns
 test_case "build_ks_path_without_kustomizations" test_build_ks_path_without_kustomizations
 test_case "build_ks_unknown_name"            test_build_ks_unknown_name
 test_case "build_ks_namespace_no_match"      test_build_ks_namespace_no_match
