@@ -184,7 +184,7 @@ EOF
 
     : > "$tmp/empty_known_hosts"
     ssh-keyscan -p "$port" 127.0.0.1 > "$tmp/known_hosts" 2>/dev/null
-    ext_ssh_url="ssh://$USER@127.0.0.1:$port"
+    ext_ssh_url="ssh://${USER:-$(id -un)}@127.0.0.1:$port"
     ext_ssh_port=$port
     return 0
 }
@@ -254,7 +254,7 @@ test_ext_ssh_accept_new_tofu_passes() {
 
 # ─── Host scoping of https credentials (always-401 server) ───────────────
 
-HTTP403_PID=''
+HTTP401_PID=''
 
 # start_ext_401_server <port>: python3 HTTP server answering 401 to
 # everything, standing in for a private forge that rejects the request.
@@ -278,16 +278,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
 socketserver.TCPServer.allow_reuse_address = True
 socketserver.TCPServer(("127.0.0.1", int(sys.argv[1])), Handler).serve_forever()
 EOF
-    HTTP403_PID=$!
+    HTTP401_PID=$!
     sleep 1
-    kill -0 "$HTTP403_PID" 2>/dev/null
+    kill -0 "$HTTP401_PID" 2>/dev/null
 }
 
 stop_ext_401_server() {
-    if [[ -n "$HTTP403_PID" ]]; then
-        kill "$HTTP403_PID" 2>/dev/null || true
-        wait "$HTTP403_PID" 2>/dev/null || true
-        HTTP403_PID=''
+    if [[ -n "$HTTP401_PID" ]]; then
+        kill "$HTTP401_PID" 2>/dev/null || true
+        wait "$HTTP401_PID" 2>/dev/null || true
+        HTTP401_PID=''
     fi
 }
 
