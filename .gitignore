@@ -4,6 +4,9 @@
 # Test results (captured stdout/stderr per test, regenerated on each run)
 /tests/.results/
 
+# External-source scenario fixtures (upstream clones, sshd keys; per-run)
+/tests/.tmp/
+
 # OS / editor
 .DS_Store
 *.swp

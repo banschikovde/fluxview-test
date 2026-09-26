@@ -61,6 +61,7 @@ fi
 TESTS_TOTAL=0
 TESTS_PASSED=0
 TESTS_FAILED=0
+TESTS_SKIPPED=0
 CURRENT_TEST=''
 
 # Each test file records results here.
@@ -104,6 +105,14 @@ fail() {
         printf '      %s%s%s\n' "$COLOR_DIM" "$2" "$COLOR_RESET" >&2
     fi
     echo "$CURRENT_TEST :: $1" >> "$RESULTS_DIR/_failures.txt"
+}
+
+# skip counts the test as neither passed nor failed: a prerequisite the
+# scenario depends on (sshd, python3) is unavailable in this environment.
+skip() {
+    TESTS_TOTAL=$((TESTS_TOTAL+1))
+    TESTS_SKIPPED=$((TESTS_SKIPPED+1))
+    printf '  %s⏦%s %s\n' "$COLOR_YELLOW" "$COLOR_RESET" "$1"
 }
 
 assert_exit_code() {

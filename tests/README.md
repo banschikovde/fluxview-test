@@ -75,10 +75,11 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup | 17 |
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path | 11 |
+| `test_external_sources.sh` | external `GitRepository` sources: file:// pinned tag / floating branch, `--git-source-cache-dir`/`-ttl`, SSH host key policies via a local sshd fixture, https credential host scoping (`FLUXVIEW_GIT_CREDENTIAL_HOSTS`) via a local 401 server | 10 |
 | `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag (+ `master`, short-form rejected, mass-skip warning), `--strict`, `--skip-kind`, `--schema-download-timeout` (0 ok / negative rejected), `--output json/junit` (incl. passing-run reports with skipped cases) | 32 |
 | `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2), duplicated YAML keys fail the build (exit 2), multi-version CRD (per-version schemas), corrupt JSON schema file (error, not skip), zero-resource build, broken CRD YAML (hard error exit 2, never cached) | 10 |
 | `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement, `-standalone-strict` variant under `--strict` | 4 |
-| **Total**             |                                    | **343** |
+| **Total**             |                                    | **375 assertions** |
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.
@@ -112,60 +113,19 @@ environment variable.
 `fake-podinfo/` is intentional: it duplicates the podinfo HelmRelease
 (`namespace/name`) to exercise the dedup logic in `buildHRInflation`.
 
-## Known fluxview issues surfaced by these tests
+## Previously known fluxview issues (fixed)
 
-The smoke tests pass, but they also document two real fluxview bugs (each is
-covered by a non-failing "known issue" test so regressions surface if the
-behavior changes):
+Two issues this suite used to document as open "known issues" are fixed in
+the current fluxview binary and locked in as positive regression tests:
 
-### 1. `validate` with a relative `--path` emits spurious warnings
+1. `validate` with a relative `--path` no longer emits `Rel: can't make …`
+   warnings — `validate` now passes the absolute cluster path through, the
+   same way `build` always did.
+   Test: `test_validate.sh::validate_relative_path_no_warnings`.
 
-```
-$ fluxview validate --path k8s/test/cluster/
-…
-Warning: could not read k8s/test/cluster/apps.yaml: Rel: can't make
-k8s/test/cluster/apps.yaml relative to /Users/…/fluxview-test
-… (one per YAML file under --path)
-```
+2. `diff hr --namespace <ns>` no longer drops resources from charts that
+   omit `{{ .Release.Namespace }}` — inflation injects the HelmRelease
+   namespace into every rendered resource, so the resource-level filter
+   matches.
+   Test: `test_diff_hr.sh::diff_hr_namespace_filter`.
 
-The validation result and exit code are correct, but every YAML file under
-the relative `--path` triggers a warning.
-
-**Root cause:** `internal/cli/validate.go` computes `absClusterPath` (used
-for the `os.Stat` check) but then passes the raw `clusterPath` (still
-relative) into `flux.NewParser` and downstream walkers. The loose-file
-reader in `buildKustomizeOverlays` calls `filepath.Rel(repoRoot, absPath)`
-which fails because `absPath` isn't actually absolute.
-
-**Fix:** pass `absClusterPath` consistently (as `build.go` already does).
-
-**Test:** `test_validate.sh::validate_known_relative_path_warn`.
-
-### 2. `diff hr --namespace <ns>` drops resources from charts that omit `{{ .Release.Namespace }}`
-
-```
-$ fluxview diff hr --path k8s/test/cluster/ --branch-orig HEAD~1 --namespace backend
-…
-Inflating HelmRelease backend/backend
-No resources found in namespace "backend"
-```
-
-The `backend` HelmRelease is correctly inflated, but the resulting
-`Deployment` has no `metadata.namespace` (the local chart doesn't template
-`{{ .Release.Namespace }}`), so `filterByNamespace` in `computeAndOutputDiff`
-filters it out. Charts that DO set namespace (e.g. the upstream `podinfo`
-chart) work fine.
-
-**Root cause:** `build hr` applies the namespace filter at the HelmRelease
-level (inflate only matching HRs), but `diff hr` additionally applies a
-resource-level filter at diff time. Helm rendering doesn't inject
-`metadata.namespace` unless the chart sets it, so the resource-level filter
-becomes a no-op for charts that don't.
-
-**Fix options:**
-- Inject `metadata.namespace` during inflation (set `helm template --namespace=<hr-ns>`),
-  or
-- Drop the resource-level filter from `computeAndOutputDiff` when the
-  namespace was already applied at HR-inflation time.
-
-**Test:** `test_diff_hr.sh::diff_hr_namespace_filter_known_gap`.

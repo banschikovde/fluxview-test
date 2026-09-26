@@ -56,10 +56,11 @@ DURATION=$((END_EPOCH-START_EPOCH))
 
 # Summary.
 printf '\n%s────────────────────────────────────────%s\n' "$COLOR_YELLOW" "$COLOR_RESET"
-printf 'Total: %d  Passed: %s%d%s  Failed: %s%d%s  Time: %ds\n' \
+printf 'Total: %d  Passed: %s%d%s  Failed: %s%d%s  Skipped: %d  Time: %ds\n' \
     "$TESTS_TOTAL" \
     "$COLOR_GREEN" "$TESTS_PASSED" "$COLOR_RESET" \
     "$COLOR_RED" "$TESTS_FAILED" "$COLOR_RESET" \
+    "$TESTS_SKIPPED" \
     "$DURATION"
 
 if [[ "$TESTS_FAILED" -gt 0 ]]; then
