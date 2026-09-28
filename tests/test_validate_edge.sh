@@ -165,19 +165,19 @@ test_validate_edge_broken_crd_yaml_fails() {
     # with the corrupt JSON schema file above. The cache is isolated and
     # the failure is never cached: a warm second run fails identically
     # (no warn-once degradation to warn-never across cached runs).
-    local xdg
-    xdg=$(mktemp -d)
-    XDG_CACHE_HOME="$xdg" run_fluxview validate --path "$EDGE_CLUSTER_PATH" \
+    local base
+    base=$(mktemp -d)
+    FLUXVIEW_CACHE_HOME="$base" run_fluxview validate --path "$EDGE_CLUSTER_PATH" \
         --schema-dir "$EDGE_BROKEN_CRD_DIR"
     assert_exit_code 2 "broken CRD YAML fails validate (exit 2)"
     assert_stderr_contains "could not decode a document in " "the error names the undecodable CRD file"
     assert_not_contains "All resources valid." "no success message on a broken CRD file"
 
-    XDG_CACHE_HOME="$xdg" run_fluxview validate --path "$EDGE_CLUSTER_PATH" \
+    FLUXVIEW_CACHE_HOME="$base" run_fluxview validate --path "$EDGE_CLUSTER_PATH" \
         --schema-dir "$EDGE_BROKEN_CRD_DIR"
     assert_exit_code 2 "a warm cache fails identically (the failure is not cached)"
     assert_stderr_contains "could not decode a document in " "the warm run reports it again"
-    rm -rf "$xdg"
+    rm -rf "$base"
 }
 
 # ─── Registration ────────────────────────────────────────────────────────

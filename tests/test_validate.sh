@@ -71,18 +71,18 @@ test_validate_native_k8s_invalid() {
 }
 
 test_validate_schema_cache_populated() {
-    # Downloaded schemas are cached under $XDG_CACHE_HOME/fluxview/schemas;
+    # Downloaded schemas are cached under $FLUXVIEW_CACHE_HOME/schemas;
     # isolate the cache and verify a run with native resources fills it.
-    local xdg
-    xdg=$(mktemp -d)
-    XDG_CACHE_HOME="$xdg" run_fluxview validate --path "$CLUSTER_PATH"
+    local base
+    base=$(mktemp -d)
+    FLUXVIEW_CACHE_HOME="$base" run_fluxview validate --path "$CLUSTER_PATH"
     assert_exit_code 0 "validate with isolated cache succeeds"
-    if [[ -d "$xdg/fluxview/schemas" ]] && [[ -n "$(ls -A "$xdg/fluxview/schemas" 2>/dev/null)" ]]; then
-        pass "schema cache populated under XDG_CACHE_HOME"
+    if [[ -d "$base/schemas" ]] && [[ -n "$(ls -A "$base/schemas" 2>/dev/null)" ]]; then
+        pass "schema cache populated under FLUXVIEW_CACHE_HOME"
     else
-        fail "schema cache populated under XDG_CACHE_HOME" "$xdg/fluxview/schemas is missing or empty"
+        fail "schema cache populated under FLUXVIEW_CACHE_HOME" "$base/schemas is missing or empty"
     fi
-    rm -rf "$xdg"
+    rm -rf "$base"
 }
 
 test_validate_kubernetes_version_flag() {
