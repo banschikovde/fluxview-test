@@ -80,11 +80,11 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2), duplicated YAML keys fail the build (exit 2), multi-version CRD (per-version schemas), corrupt JSON schema file (error, not skip), zero-resource build, broken CRD YAML (hard error exit 2, never cached) | 10 |
 | `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement, `-standalone-strict` variant under `--strict` | 4 |
 | `test_inventory.sh`   | `inventory` `--kubernetes-version` (kubeVersion-capped charts render, override, invalid rejected, flag registered) | 4 |
-| **Total**             |                                    | **406 assertions** |
+| **Total**             |                                    | **407 assertions** |
 
 Row counts are registered test cases; the runner's Total counts individual
 assertions (each case checks several properties), hence 147 rows against
-406 assertions.
+407 assertions.
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.
