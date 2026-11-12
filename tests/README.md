@@ -76,15 +76,15 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path, `--kubernetes-version` (kubeVersion-capped chart diffs instead of exit 2, strict failure at the assumed default, override) | 13 |
 | `test_external_sources.sh` | external `GitRepository` sources: file:// pinned tag / floating branch, `--git-source-cache-dir`/`-ttl`, SSH host key policies via a local sshd fixture, https credential host scoping (`FLUXVIEW_GIT_CREDENTIAL_HOSTS`) via a local 401 server | 10 |
-| `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag (+ `master`, short-form rejected, mass-skip warning), `--strict`, `--skip-kind`, `--schema-download-timeout` (0 ok / negative rejected), `--output json/junit` (incl. passing-run reports with skipped cases) | 32 |
+| `test_validate.sh`    | `validate` kubeconform engine: native k8s via registry, CRD schemas, cache, version flag (+ `master`, short-form rejected, mass-skip warning), `--strict`, `--skip-kind`, `--schema-download-timeout` (0 ok / negative rejected), `--output json/junit` (incl. passing-run reports with skipped cases), `FLUXVIEW_KUBE_VERSION` env (schema version pinned, short form warns + falls back) | 34 |
 | `test_validate_edge.sh` | `validate` edge cases: empty/`---`/comment-only files, multi-doc YAML, CRD without structural schema, broken YAML fails (exit 2), KS with missing spec.path fails (exit 2), duplicated YAML keys fail the build (exit 2), multi-version CRD (per-version schemas), corrupt JSON schema file (error, not skip), zero-resource build, broken CRD YAML (hard error exit 2, never cached) | 10 |
 | `test_validate_kjs.sh` | `validate` kubernetes-json-schema checkout: local priority over registry, registry fallback, `v`-prefix requirement, `-standalone-strict` variant under `--strict` | 4 |
 | `test_inventory.sh`   | `inventory` `--kubernetes-version` (kubeVersion-capped charts render, override, invalid rejected, flag registered) | 4 |
-| **Total**             |                                    | **402 assertions** |
+| **Total**             |                                    | **406 assertions** |
 
 Row counts are registered test cases; the runner's Total counts individual
-assertions (each case checks several properties), hence 145 rows against
-402 assertions.
+assertions (each case checks several properties), hence 147 rows against
+406 assertions.
 
 Each test exercises:
 - **Happy path** — exit 0, expected output snippets.
