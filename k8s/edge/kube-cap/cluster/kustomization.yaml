@@ -1,0 +1,13 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kube-cap
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./k8s/edge/kube-cap/apps
+  wait: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

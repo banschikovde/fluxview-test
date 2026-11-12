@@ -1,0 +1,7 @@
+apiVersion: v2
+name: capped-old
+description: Minimal chart capped below the assumed default kube version — renders only with --kubernetes-version (issue fluxview#14)
+type: application
+version: 0.1.0
+appVersion: "1.0"
+kubeVersion: < 1.29.0-0
