@@ -107,6 +107,30 @@ test_diff_hr_help() {
     assert_stdout_contains "helmrelease" "help mentions helmrelease alias"
 }
 
+# ─── --kubernetes-version (issue #14: kubeVersion-capped charts) ──────────
+
+test_diff_hr_kube_cap_is_a_diff_not_an_error() {
+    # A kubeVersion-capped chart must inflate on the current side and produce
+    # a diff (exit 1) — not abort with exit 2. The fixture does not exist at
+    # the diff base, so the chart shows as added.
+    run_fluxview diff hr capped-dist --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --branch-orig "$DIFF_BASE_REV" --color never
+    assert_exit_code 1 "diff of a kubeVersion-capped chart is a diff, not an error"
+    assert_stdout_contains "Deployment: kube-cap/capped-dist" "capped chart inflated on the current side"
+}
+
+test_diff_hr_kube_version_override() {
+    # The capped-old chart (< 1.29.0-0) fails at the assumed default: the
+    # diff must fail (exit 2, strict mode) rather than report a false
+    # added/removed. With --kubernetes-version both sides render.
+    run_fluxview diff hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --branch-orig "$DIFF_BASE_REV" --color never
+    assert_exit_code 2 "strict diff fails when a side cannot inflate (default kube version)"
+    assert_stderr_contains "kubeVersion" "cap failure reported"
+
+    run_fluxview diff hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --branch-orig "$DIFF_BASE_REV" --color never --kubernetes-version 1.28.9
+    assert_exit_code 1 "diff with --kubernetes-version override is a diff"
+    assert_stdout_contains "Deployment: kube-cap/capped-old" "capped chart inflated on both sides"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "diff_hr_detects_changes"                test_diff_hr_detects_changes
@@ -120,3 +144,5 @@ test_case "diff_hr_color_never_prefix"             test_diff_hr_color_never_pref
 test_case "diff_hr_unsupported_skipped_both"       test_diff_hr_unsupported_skipped_in_both_states
 test_case "diff_hr_unknown_name"                   test_diff_hr_unknown_name
 test_case "diff_hr_help"                           test_diff_hr_help
+test_case "diff_hr_kube_cap_diff_not_error"        test_diff_hr_kube_cap_is_a_diff_not_an_error
+test_case "diff_hr_kube_version_override"          test_diff_hr_kube_version_override

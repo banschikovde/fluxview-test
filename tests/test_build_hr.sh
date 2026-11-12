@@ -135,6 +135,44 @@ test_build_hr_unknown_name() {
     assert_stderr_contains "not found" "error reports not found"
 }
 
+# ─── --kubernetes-version (issue #14: kubeVersion-capped charts) ──────────
+
+test_build_hr_kube_cap_below_sdk_default() {
+    # a chart capped below the Helm SDK's own moving default (derived from
+    # client-go), as shipped by charts pinned to older clusters, must render
+    # against the assumed default without any flag.
+    run_fluxview build hr capped-dist --path "$REPO_ROOT/k8s/edge/kube-cap/cluster"
+    assert_exit_code 0 "build hr of a kubeVersion-capped chart succeeds"
+    assert_stdout_contains "Deployment: kube-cap/capped-dist" "upper-bound capped chart inflated"
+}
+
+test_build_hr_kube_cap_default_skips() {
+    # a chart capped below the assumed default (1.36.1) is warning + skip
+    # (build never exits non-zero for a skippable HR).
+    run_fluxview build hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster"
+    assert_exit_code 0 "build hr degrades to warning + skip"
+    assert_stderr_contains "kubeVersion" "cap failure is reported"
+    assert_not_contains "Deployment: kube-cap/capped-old" "capped chart not rendered at the assumed default"
+}
+
+test_build_hr_kube_version_override() {
+    run_fluxview build hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --kubernetes-version 1.28.9
+    assert_exit_code 0 "build hr with --kubernetes-version override succeeds"
+    assert_stdout_contains "Deployment: kube-cap/capped-old" "capped chart renders against 1.28.9"
+}
+
+test_build_hr_kube_version_env() {
+    FLUXVIEW_KUBE_VERSION=1.28.9 run_fluxview build hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster"
+    assert_exit_code 0 "build hr honors FLUXVIEW_KUBE_VERSION"
+    assert_stdout_contains "Deployment: kube-cap/capped-old" "env-driven kube version renders the capped chart"
+}
+
+test_build_hr_kube_version_invalid() {
+    run_fluxview build hr capped-old --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --kubernetes-version nonsense
+    assert_exit_code 2 "invalid --kubernetes-version fails"
+    assert_stderr_contains "invalid --kubernetes-version" "error names the flag"
+}
+
 test_build_hr_help() {
     run_fluxview build hr --help
     assert_exit_code 0 "build hr --help succeeds"
@@ -161,3 +199,8 @@ test_case "build_hr_suspended_skipped"        test_build_hr_suspended_skipped
 test_case "build_hr_dedup_duplicate"          test_build_hr_dedup_duplicate_helmreleases
 test_case "build_hr_unknown_name"             test_build_hr_unknown_name
 test_case "build_hr_help"                     test_build_hr_help
+test_case "build_hr_kube_cap_below_sdk_default" test_build_hr_kube_cap_below_sdk_default
+test_case "build_hr_kube_cap_default_skips"   test_build_hr_kube_cap_default_skips
+test_case "build_hr_kube_version_override"    test_build_hr_kube_version_override
+test_case "build_hr_kube_version_env"         test_build_hr_kube_version_env
+test_case "build_hr_kube_version_invalid"     test_build_hr_kube_version_invalid

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: capped-dist
+description: Minimal chart capped below the Helm SDK's moving default kube version, as shipped by charts pinned to older clusters (issue fluxview#14)
+type: application
+version: 0.1.0
+appVersion: "1.0"
+kubeVersion: < 1.37.0-0

@@ -1,0 +1,15 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: capped-dist
+  namespace: kube-cap
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ./k8s/edge/kube-cap/apps/capped-dist/chart
+      version: "0.1.0"
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
