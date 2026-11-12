@@ -353,12 +353,12 @@ test_validate_kube_version_env() {
 
 test_validate_kube_version_env_invalid() {
     # validate parses strictly (full X.Y.Z or master): a short form is
-    # unusable for schema URLs — warn + fall back to the default instead of
-    # silently checking nothing.
+    # unusable for schema URLs — the run fails with a name-accurate error
+    # instead of silently checking against a different version.
     FLUXVIEW_KUBE_VERSION=1.35 run_fluxview validate --path "$CLUSTER_PATH"
-    assert_exit_code 0 "invalid env value degrades to a warning"
-    assert_stderr_contains 'invalid FLUXVIEW_KUBE_VERSION "1.35"' "invalid env warns"
-    assert_stderr_contains "(Kubernetes 1.36.1)" "falls back to the default version"
+    assert_exit_code 2 "unusable env value fails the gate"
+    assert_stderr_contains 'invalid FLUXVIEW_KUBE_VERSION "1.35"' "error names the env variable"
+    assert_stderr_contains "want a full version like 1.36.1" "error advises the accepted form"
 }
 
 # ─── Registration ────────────────────────────────────────────────────────
