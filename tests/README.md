@@ -72,7 +72,7 @@ Per-test stdout/stderr is captured under `tests/.results/<test>.stdout` and
 |-----------------------|------------------------------------|-------|
 | `test_root.sh`        | help, version, exit codes, unknown args/flags | 13 |
 | `test_build_ks.sh`    | `build ks` default, filters, aliases, errors | 21 |
-| `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup, `--kubernetes-version`/`FLUXVIEW_KUBE_VERSION` (kubeVersion-capped charts: rancher-shape default render, override, env, invalid rejected) | 22 |
+| `test_build_hr.sh`    | `build hr` inflation, unsupported skip, dedup, `--kubernetes-version`/`FLUXVIEW_KUBE_VERSION` (kubeVersion-capped charts: upper-bound default render, override, env, invalid rejected) | 22 |
 | `test_diff_ks.sh`     | `diff ks` changes detected, filters, colors | 16 |
 | `test_diff_hr.sh`     | `diff hr` per-HR diffs, no-change path, `--kubernetes-version` (kubeVersion-capped chart diffs instead of exit 2, strict failure at the assumed default, override) | 13 |
 | `test_external_sources.sh` | external `GitRepository` sources: file:// pinned tag / floating branch, `--git-source-cache-dir`/`-ttl`, SSH host key policies via a local sshd fixture, https credential host scoping (`FLUXVIEW_GIT_CREDENTIAL_HOSTS`) via a local 401 server | 10 |

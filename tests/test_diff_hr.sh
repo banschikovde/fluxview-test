@@ -110,12 +110,12 @@ test_diff_hr_help() {
 # ─── --kubernetes-version (issue #14: kubeVersion-capped charts) ──────────
 
 test_diff_hr_kube_cap_is_a_diff_not_an_error() {
-    # A kubeVersion-capped chart (rancher 2.15.x shape) must inflate on the
-    # current side and produce a diff (exit 1) — not abort with exit 2. The
-    # fixture does not exist at the diff base, so the chart shows as added.
-    run_fluxview diff hr capped-rancher --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --branch-orig "$DIFF_BASE_REV" --color never
+    # A kubeVersion-capped chart must inflate on the current side and produce
+    # a diff (exit 1) — not abort with exit 2. The fixture does not exist at
+    # the diff base, so the chart shows as added.
+    run_fluxview diff hr capped-dist --path "$REPO_ROOT/k8s/edge/kube-cap/cluster" --branch-orig "$DIFF_BASE_REV" --color never
     assert_exit_code 1 "diff of a kubeVersion-capped chart is a diff, not an error"
-    assert_stdout_contains "Deployment: kube-cap/capped-rancher" "capped chart inflated on the current side"
+    assert_stdout_contains "Deployment: kube-cap/capped-dist" "capped chart inflated on the current side"
 }
 
 test_diff_hr_kube_version_override() {

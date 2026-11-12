@@ -138,12 +138,12 @@ test_build_hr_unknown_name() {
 # ─── --kubernetes-version (issue #14: kubeVersion-capped charts) ──────────
 
 test_build_hr_kube_cap_below_sdk_default() {
-    # rancher 2.15.x shape: a chart capped below the Helm SDK's own moving
-    # default (derived from client-go) must render against the assumed
-    # default without any flag.
-    run_fluxview build hr capped-rancher --path "$REPO_ROOT/k8s/edge/kube-cap/cluster"
+    # a chart capped below the Helm SDK's own moving default (derived from
+    # client-go), as shipped by charts pinned to older clusters, must render
+    # against the assumed default without any flag.
+    run_fluxview build hr capped-dist --path "$REPO_ROOT/k8s/edge/kube-cap/cluster"
     assert_exit_code 0 "build hr of a kubeVersion-capped chart succeeds"
-    assert_stdout_contains "Deployment: kube-cap/capped-rancher" "rancher-shaped capped chart inflated"
+    assert_stdout_contains "Deployment: kube-cap/capped-dist" "upper-bound capped chart inflated"
 }
 
 test_build_hr_kube_cap_default_skips() {

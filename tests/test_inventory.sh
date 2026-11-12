@@ -13,12 +13,12 @@ readonly KUBE_CAP_CLUSTER_PATH="$REPO_ROOT/k8s/edge/kube-cap/cluster"
 # ─── --kubernetes-version ────────────────────────────────────────────────
 
 test_inventory_kube_cap_default() {
-    # capped-rancher (< 1.37.0-0, the rancher 2.15.x shape) renders against
-    # the assumed default without any flag; capped-old (< 1.29.0-0) cannot
-    # render and is skipped with a warning.
+    # capped-dist (< 1.37.0-0, a chart pinned to older clusters) renders
+    # against the assumed default without any flag; capped-old (< 1.29.0-0)
+    # cannot render and is skipped with a warning.
     run_fluxview inventory --path "$KUBE_CAP_CLUSTER_PATH"
     assert_exit_code 0 "inventory succeeds over kubeVersion-capped charts"
-    assert_stdout_contains "capped-rancher" "rancher-shaped capped chart listed"
+    assert_stdout_contains "capped-dist" "upper-bound capped chart listed"
     assert_stderr_contains "kubeVersion" "chart capped below the assumed default warns"
 }
 
@@ -26,7 +26,7 @@ test_inventory_kube_version_override() {
     run_fluxview inventory --path "$KUBE_CAP_CLUSTER_PATH" --kubernetes-version 1.28.9
     assert_exit_code 0 "inventory with --kubernetes-version override succeeds"
     assert_stdout_contains "capped-old" "chart capped below the default now listed"
-    assert_stdout_contains "capped-rancher" "rancher-shaped capped chart still listed"
+    assert_stdout_contains "capped-dist" "upper-bound capped chart still listed"
 }
 
 test_inventory_kube_version_invalid() {

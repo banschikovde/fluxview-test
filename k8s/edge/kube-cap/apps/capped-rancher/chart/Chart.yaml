@@ -1,7 +1,0 @@
-apiVersion: v2
-name: capped-rancher
-description: Minimal chart capped below the Helm SDK's moving default kube version (rancher 2.15.x shape, issue fluxview#14)
-type: application
-version: 0.1.0
-appVersion: "1.0"
-kubeVersion: < 1.37.0-0
