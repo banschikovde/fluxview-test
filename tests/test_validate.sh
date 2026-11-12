@@ -341,6 +341,26 @@ test_validate_schema_download_timeout_zero_accepted() {
     assert_stderr_contains "All resources valid." "run completes with no per-request limit"
 }
 
+# ─── FLUXVIEW_KUBE_VERSION (shared with the Helm-inflating commands) ──────
+
+test_validate_kube_version_env() {
+    # The env pins the schema version the same way --kubernetes-version
+    # does: the announce line shows the resolved version.
+    FLUXVIEW_KUBE_VERSION=1.35.7 run_fluxview validate --path "$CLUSTER_PATH"
+    assert_exit_code 0 "validate honors FLUXVIEW_KUBE_VERSION"
+    assert_stderr_contains "(Kubernetes 1.35.7)" "env-driven schema version announced"
+}
+
+test_validate_kube_version_env_invalid() {
+    # validate parses strictly (full X.Y.Z or master): a short form is
+    # unusable for schema URLs — the run fails with a name-accurate error
+    # instead of silently checking against a different version.
+    FLUXVIEW_KUBE_VERSION=1.35 run_fluxview validate --path "$CLUSTER_PATH"
+    assert_exit_code 2 "unusable env value fails the gate"
+    assert_stderr_contains 'invalid FLUXVIEW_KUBE_VERSION "1.35"' "error names the env variable"
+    assert_stderr_contains "want a full version like 1.36.1" "error advises the accepted form"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "validate_happy"                       test_validate_happy
@@ -375,3 +395,5 @@ test_case "validate_output_json_success"           test_validate_output_json_suc
 test_case "validate_output_junit_skipped"          test_validate_output_junit_skipped_cases
 test_case "validate_download_timeout_negative"     test_validate_schema_download_timeout_negative_rejected
 test_case "validate_download_timeout_zero"         test_validate_schema_download_timeout_zero_accepted
+test_case "validate_kube_version_env"              test_validate_kube_version_env
+test_case "validate_kube_version_env_invalid"      test_validate_kube_version_env_invalid
