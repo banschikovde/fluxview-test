@@ -127,14 +127,15 @@ test_build_hr_dedup_duplicate_helmreleases() {
 }
 
 test_build_hr_oci_sourced_ks_quiet() {
-    # Issue #25: the hr discovery stage is quiet — an OCI-sourced
-    # Kustomization whose spec.path lives inside the artifact (the Envoy
-    # Gateway CRDs pattern, tree holds no HelmReleases) is skipped without
-    # the per-KS "not fetched externally" warning on stderr.
-    run_fluxview build hr --path "$REPO_ROOT/k8s/edge/oci-source/cluster"
+    # Issue #25 + the OCI fetch feature: with fetching disabled the hr
+    # discovery stage is quiet — an OCI-sourced Kustomization whose
+    # spec.path lives inside the artifact (the Envoy Gateway CRDs
+    # pattern, tree holds no HelmReleases) is skipped without the per-KS
+    # skip warning on stderr.
+    run_fluxview build hr --path "$REPO_ROOT/k8s/edge/oci-source/cluster" --no-oci-source-fetch
     assert_exit_code 0 "build hr succeeds over an OCI-sourced KS"
     assert_stderr_contains "No HelmReleases found." "the tree holds no HelmReleases"
-    assert_not_contains "not fetched externally" "no per-KS skip warning in hr output"
+    assert_not_contains "not fetched" "no per-KS skip warning in hr output"
     assert_not_contains "skipping its resources" "no skip warning in hr output"
 }
 
