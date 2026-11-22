@@ -283,6 +283,27 @@ test_validate_output_junit() {
     assert_stderr_contains "Validating against" "human chatter stays on stderr"
 }
 
+test_validate_output_json_unchecked() {
+    # Issue #24: Kustomizations left unchecked (unfetched sources) are
+    # carried in the json report — a partial check must not read as
+    # fully green. The oci-source edge tree with the OCI fetch kill
+    # switch leaves envoy-gateway-crds unchecked and green.
+    run_fluxview validate --path "$REPO_ROOT/k8s/edge/oci-source/cluster" --no-oci-source-fetch --output json
+    assert_exit_code 0 "an unchecked source keeps the run green"
+    assert_stdout_contains '"unchecked"' "the report carries the unchecked array"
+    assert_stdout_contains '"kustomization": "flux-system/envoy-gateway-crds"' "the array names the Kustomization"
+    assert_stdout_contains '"source": "OCIRepository flux-system/envoy-gateway-crds"' "the entry names the source"
+}
+
+test_validate_output_junit_unchecked() {
+    # Issue #24, junit side: one skipped <testcase> per unchecked
+    # Kustomization — the CI timeline shows the gap.
+    run_fluxview validate --path "$REPO_ROOT/k8s/edge/oci-source/cluster" --no-oci-source-fetch --output junit
+    assert_exit_code 0 "an unchecked source keeps the run green"
+    assert_stdout_contains 'name="Kustomization flux-system/envoy-gateway-crds"' "a testcase names the Kustomization"
+    assert_stdout_contains "<skipped message=" "the testcase is skipped, not green"
+}
+
 test_validate_output_json_success_with_skipped() {
     # JSON output on a PASSING run: the edge cluster's Gadget has no schema
     # anywhere, so the report must carry per-resource statuses ("valid" and
@@ -392,6 +413,8 @@ test_case "validate_skip_kind_qualified"           test_validate_skip_kind_quali
 test_case "validate_output_json"                   test_validate_output_json
 test_case "validate_output_junit"                   test_validate_output_junit
 test_case "validate_output_json_success"           test_validate_output_json_success_with_skipped
+test_case "validate_output_json_unchecked"       test_validate_output_json_unchecked
+test_case "validate_output_junit_unchecked"       test_validate_output_junit_unchecked
 test_case "validate_output_junit_skipped"          test_validate_output_junit_skipped_cases
 test_case "validate_download_timeout_negative"     test_validate_schema_download_timeout_negative_rejected
 test_case "validate_download_timeout_zero"         test_validate_schema_download_timeout_zero_accepted
