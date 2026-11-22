@@ -186,20 +186,31 @@ test_validate_edge_broken_crd_yaml_fails() {
 
 # ─── Flux KS sourced from an OCIRepository ───────────────────────────────
 
-test_validate_edge_oci_source_missing_path_warns_and_passes() {
+test_validate_edge_oci_source_no_fetch_warns_and_passes() {
     # A Kustomization whose sourceRef.kind is OCIRepository and whose
     # spec.path lives inside the OCI artifact (the Envoy Gateway CRDs
-    # pattern) used to fail validate's final path check — while external
-    # GitRepository sources warn-and-skip under the same conditions.
-    # OCIRepository sources are never fetched, so the KS now follows the
-    # best-effort contract: warn, name it "left unchecked", exit 0.
-    run_fluxview validate --path "$EDGE_OCI_SOURCE_CLUSTER_PATH"
+    # pattern). With fetching disabled (--no-oci-source-fetch) the KS
+    # follows the best-effort contract: warn, name it "left unchecked",
+    # exit 0 — the pre-fetch behavior, restored by the kill switch.
+    run_fluxview validate --path "$EDGE_OCI_SOURCE_CLUSTER_PATH" --no-oci-source-fetch
     assert_exit_code 0 "OCI-sourced KS with an artifact path does not fail validate"
-    assert_stderr_contains "path ./gateway-helm/charts/crds/crds not found locally (source kind OCIRepository is not fetched externally)" \
+    assert_stderr_contains "path ./gateway-helm/charts/crds/crds not found locally (source kind OCIRepository is not fetched)" \
         "warning names the path and the unfetched source kind"
     assert_stderr_contains "1 Kustomization(s) left unchecked: flux-system/envoy-gateway-crds" \
         "the gate summary names the unchecked Kustomization"
     assert_stderr_contains "All resources valid." "the local tree is still validated"
+}
+
+test_validate_edge_oci_source_fetched_builds() {
+    # With fetching on (the default since the OCI source feature) the
+    # docker.io envoy-gateway artifact is pulled, the chart layer
+    # extracted and the CRDs validated — no warnings, no unchecked KS.
+    # Network-dependent: docker.io must be reachable.
+    run_fluxview validate --path "$EDGE_OCI_SOURCE_CLUSTER_PATH"
+    assert_exit_code 0 "fetched OCI-sourced KS validates"
+    assert_not_contains "left unchecked" "a fetched artifact leaves nothing unchecked"
+    assert_not_contains "fetching OCIRepository" "no fetch warnings on a healthy artifact"
+    assert_stderr_contains "Building flux-system/envoy-gateway-crds" "the artifact KS builds"
 }
 
 # ─── Registration ────────────────────────────────────────────────────────
@@ -209,7 +220,8 @@ test_case "validate_edge_multidoc"               test_validate_edge_multidoc_all
 test_case "validate_edge_crd_without_schema"     test_validate_edge_crd_without_schema_skips_kind
 test_case "validate_edge_broken_yaml_fails"      test_validate_edge_broken_yaml_fails
 test_case "validate_edge_missing_path_fails"     test_validate_edge_missing_path_fails
-test_case "validate_edge_oci_source"             test_validate_edge_oci_source_missing_path_warns_and_passes
+test_case "validate_edge_oci_source_no_fetch"     test_validate_edge_oci_source_no_fetch_warns_and_passes
+test_case "validate_edge_oci_source_fetched"       test_validate_edge_oci_source_fetched_builds
 test_case "validate_edge_duplicate_keys"         test_validate_edge_duplicate_keys_fail_build
 test_case "validate_edge_multiversion_crd"       test_validate_edge_multiversion_crd_per_version_schemas
 test_case "validate_edge_broken_schema_file"     test_validate_edge_broken_schema_file_errors
