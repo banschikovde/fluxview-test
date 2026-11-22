@@ -16,7 +16,10 @@
 #   - a corrupt JSON schema file in --schema-dir (parse error, not skip);
 #   - a Kustomization whose dir builds zero resources;
 #   - a CRD file whose YAML cannot be decoded (hard error exit 2 — a
-#     schema source must not break silently; the failure is never cached).
+#     schema source must not break silently; the failure is never cached);
+#   - a Kustomization sourced from an OCIRepository whose spec.path lives
+#     inside the artifact (never fetched: warn-and-skip, not a gate
+#     failure).
 source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 
 readonly EDGE_CLUSTER_PATH="$REPO_ROOT/k8s/edge/cluster"
@@ -30,6 +33,7 @@ readonly EDGE_MULTIVERSION_CRD_DIR="$REPO_ROOT/k8s/edge/multiversion-crd/crds"
 readonly EDGE_BROKEN_SCHEMA_DIR="$REPO_ROOT/k8s/edge/broken-schema"
 readonly EDGE_EMPTY_CLUSTER_PATH="$REPO_ROOT/k8s/edge/empty/cluster"
 readonly EDGE_BROKEN_CRD_DIR="$REPO_ROOT/k8s/edge/broken-crd/crds"
+readonly EDGE_OCI_SOURCE_CLUSTER_PATH="$REPO_ROOT/k8s/edge/oci-source/cluster"
 
 # ─── Sparse / empty files ────────────────────────────────────────────────
 
@@ -180,6 +184,24 @@ test_validate_edge_broken_crd_yaml_fails() {
     rm -rf "$base"
 }
 
+# ─── Flux KS sourced from an OCIRepository ───────────────────────────────
+
+test_validate_edge_oci_source_missing_path_warns_and_passes() {
+    # A Kustomization whose sourceRef.kind is OCIRepository and whose
+    # spec.path lives inside the OCI artifact (the Envoy Gateway CRDs
+    # pattern) used to fail validate's final path check — while external
+    # GitRepository sources warn-and-skip under the same conditions.
+    # OCIRepository sources are never fetched, so the KS now follows the
+    # best-effort contract: warn, name it "left unchecked", exit 0.
+    run_fluxview validate --path "$EDGE_OCI_SOURCE_CLUSTER_PATH"
+    assert_exit_code 0 "OCI-sourced KS with an artifact path does not fail validate"
+    assert_stderr_contains "path ./gateway-helm/charts/crds/crds not found locally (source kind OCIRepository is not fetched externally)" \
+        "warning names the path and the unfetched source kind"
+    assert_stderr_contains "1 Kustomization(s) left unchecked: flux-system/envoy-gateway-crds" \
+        "the gate summary names the unchecked Kustomization"
+    assert_stderr_contains "All resources valid." "the local tree is still validated"
+}
+
 # ─── Registration ────────────────────────────────────────────────────────
 
 test_case "validate_edge_sparse_files"           test_validate_edge_sparse_files
@@ -187,6 +209,7 @@ test_case "validate_edge_multidoc"               test_validate_edge_multidoc_all
 test_case "validate_edge_crd_without_schema"     test_validate_edge_crd_without_schema_skips_kind
 test_case "validate_edge_broken_yaml_fails"      test_validate_edge_broken_yaml_fails
 test_case "validate_edge_missing_path_fails"     test_validate_edge_missing_path_fails
+test_case "validate_edge_oci_source"             test_validate_edge_oci_source_missing_path_warns_and_passes
 test_case "validate_edge_duplicate_keys"         test_validate_edge_duplicate_keys_fail_build
 test_case "validate_edge_multiversion_crd"       test_validate_edge_multiversion_crd_per_version_schemas
 test_case "validate_edge_broken_schema_file"     test_validate_edge_broken_schema_file_errors
