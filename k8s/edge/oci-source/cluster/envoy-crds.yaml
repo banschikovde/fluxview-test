@@ -1,0 +1,31 @@
+# A Flux Kustomization sourced from an OCIRepository whose spec.path lives
+# inside the OCI artifact (the Envoy Gateway CRDs pattern), not in this
+# repository. fluxview never fetches OCI sources: the KS must warn-and-skip
+# and stay unchecked by the validate gate instead of failing it — the path
+# is valid in-cluster, where Flux extracts the chart layer.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: envoy-gateway-crds
+  namespace: flux-system
+spec:
+  interval: 6h
+  url: oci://docker.io/envoyproxy/gateway-helm
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: extract
+  ref:
+    tag: v1.10.0
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: envoy-gateway-crds
+  namespace: flux-system
+spec:
+  interval: 24h
+  path: ./gateway-helm/charts/crds/crds
+  prune: false
+  sourceRef:
+    kind: OCIRepository
+    name: envoy-gateway-crds
